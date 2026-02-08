@@ -1,0 +1,205 @@
+@model ReportsViewModel
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Reports & Analytics</h2>
+</div>
+
+<!-- Month Selector -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Month</label>
+                <select name="month" class="form-select">
+                    @for (int i = 1; i <= 12; i++)
+                    {
+                        <option value="@i" selected="@(i == Model.SelectedMonth)">@(new DateTime(2000, i, 1).ToString("MMMM"))</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Year</label>
+                <select name="year" class="form-select">
+                    @for (int y = DateTime.Now.Year - 2; y <= DateTime.Now.Year + 1; y++)
+                    {
+                        <option value="@y" selected="@(y == Model.SelectedYear)">@y</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-funnel me-1"></i>Generate Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Monthly Summary -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card bg-success bg-opacity-10">
+            <div class="card-body text-center">
+                <div class="stat-label">Total Income</div>
+                <div class="stat-value text-success">@Model.TotalIncome.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-danger bg-opacity-10">
+            <div class="card-body text-center">
+                <div class="stat-label">Total Expenses</div>
+                <div class="stat-value text-danger">@Model.TotalExpenses.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card @(Model.NetSavings >= 0 ? "bg-primary" : "bg-warning") bg-opacity-10">
+            <div class="card-body text-center">
+                <div class="stat-label">Net Savings</div>
+                <div class="stat-value @(Model.NetSavings >= 0 ? "text-primary" : "text-warning")">@Model.NetSavings.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-info bg-opacity-10">
+            <div class="card-body text-center">
+                <div class="stat-label">Savings Rate</div>
+                <div class="stat-value text-info">@Model.SavingsRate.ToString("F1")%</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-pie-chart me-2"></i>Spending by Category</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.CategoryBreakdowns.Any())
+                {
+                    <div class="chart-container">
+                        <canvas id="categoryPieChart"></canvas>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">No expense data for this period</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-graph-up me-2"></i>Income vs Expenses (Last 6 Months)</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row g-4 mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-bar-chart me-2"></i>Budget Performance</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="budgetChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Breakdown Table -->
+@if (Model.CategoryBreakdowns.Any())
+{
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0"><i class="bi bi-list-ul me-2"></i>Expense Breakdown</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Percentage</th>
+                            <th style="width: 40%">Distribution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var category in Model.CategoryBreakdowns)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="category-badge" style="background-color: @(category.Color)20; color: @category.Color">
+                                        @category.CategoryName
+                                    </span>
+                                </td>
+                                <td class="fw-bold">@category.Amount.ToString("C")</td>
+                                <td>@category.Percentage.ToString("F1")%</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar" style="width: @category.Percentage%; background-color: @category.Color">
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light">
+                            <th>Total</th>
+                            <th>@Model.TotalExpenses.ToString("C")</th>
+                            <th>100%</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Category Pie Chart
+            const categoryData = @Html.Raw(Model.CategoryPieChartJson);
+            if (categoryData.labels && categoryData.labels.length > 0) {
+                createPieChart('categoryPieChart', categoryData);
+            }
+
+            // Trend Line Chart
+            const trendData = @Html.Raw(Model.SpendingTrendsJson);
+            if (trendData.labels && trendData.labels.length > 0) {
+                createLineChart('trendChart', trendData);
+            }
+
+            // Budget Bar Chart
+            const budgetData = @Html.Raw(Model.BudgetPerformanceJson);
+            if (budgetData.labels && budgetData.labels.length > 0) {
+                createBarChart('budgetChart', budgetData);
+            }
+        });
+    </script>
+}

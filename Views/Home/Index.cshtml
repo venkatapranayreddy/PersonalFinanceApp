@@ -1,0 +1,229 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Dashboard</h2>
+    <span class="text-muted">@DateTime.Now.ToString("MMMM yyyy")</span>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
+                        <i class="bi bi-arrow-down-circle"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">Income</div>
+                        <div class="stat-value text-success">@Model.TotalIncomeThisMonth.ToString("C")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-danger bg-opacity-10 text-danger me-3">
+                        <i class="bi bi-arrow-up-circle"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">Expenses</div>
+                        <div class="stat-value text-danger">@Model.TotalExpensesThisMonth.ToString("C")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
+                        <i class="bi bi-piggy-bank"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">Net Savings</div>
+                        <div class="stat-value @(Model.NetSavingsThisMonth >= 0 ? "text-success" : "text-danger")">
+                            @Model.NetSavingsThisMonth.ToString("C")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-info bg-opacity-10 text-info me-3">
+                        <i class="bi bi-bank"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">Net Worth</div>
+                        <div class="stat-value @(Model.NetWorth >= 0 ? "text-success" : "text-danger")">
+                            @Model.NetWorth.ToString("C")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-pie-chart me-2"></i>Spending by Category</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-graph-up me-2"></i>Monthly Trend</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Alerts and Recent Transactions -->
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Budget Alerts</h5>
+                <a asp-controller="Budget" asp-action="Index" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                @if (Model.BudgetAlerts.Any())
+                {
+                    @foreach (var budget in Model.BudgetAlerts)
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <strong>@budget.Category?.Name</strong>
+                                <div class="small text-muted">@budget.SpentAmount.ToString("C") / @budget.Amount.ToString("C")</div>
+                            </div>
+                            <span class="badge @(budget.IsOverBudget ? "bg-danger" : "bg-warning")">
+                                @(budget.IsOverBudget ? "Over Budget" : $"{budget.PercentageUsed:F0}%")
+                            </span>
+                        </div>
+                        <div class="progress budget-progress mb-3">
+                            <div class="progress-bar @(budget.IsOverBudget ? "bg-danger" : "bg-warning")"
+                                 style="width: @Math.Min(budget.PercentageUsed, 100)%"></div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-check-circle fs-1"></i>
+                        <p class="mt-2">All budgets on track!</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="bi bi-cash-stack me-2"></i>Recent Expenses</h5>
+                <a asp-controller="Expense" asp-action="Index" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentExpenses.Any())
+                {
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var expense in Model.RecentExpenses)
+                        {
+                            <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div>@expense.Description</div>
+                                    <small class="text-muted">@expense.Date.ToString("MMM dd") - @expense.Category?.Name</small>
+                                </div>
+                                <span class="transaction-amount expense">-@expense.Amount.ToString("C")</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">No expenses yet</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="bi bi-wallet me-2"></i>Recent Income</h5>
+                <a asp-controller="Income" asp-action="Index" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentIncomes.Any())
+                {
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var income in Model.RecentIncomes)
+                        {
+                            <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div>@income.Source</div>
+                                    <small class="text-muted">@income.Date.ToString("MMM dd") - @income.Category?.Name</small>
+                                </div>
+                                <span class="transaction-amount income">+@income.Amount.ToString("C")</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">No income yet</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Category Pie Chart
+            const categoryData = @Html.Raw(Model.ExpenseByCategoryJson);
+            if (categoryData.labels && categoryData.labels.length > 0) {
+                createPieChart('categoryChart', categoryData);
+            }
+
+            // Trend Line Chart
+            const trendData = @Html.Raw(Model.MonthlyTrendJson);
+            if (trendData.labels && trendData.labels.length > 0) {
+                createLineChart('trendChart', trendData);
+            }
+        });
+    </script>
+}
