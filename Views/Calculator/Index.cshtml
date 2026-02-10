@@ -1,0 +1,240 @@
+@model InvestmentCalculatorViewModel
+@{
+    ViewData["Title"] = "Investment Calculator";
+    var isSip = Model.CalculatorType == "SIP";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-calculator me-2"></i>Investment Calculator</h2>
+</div>
+
+<!-- Calculator Tabs -->
+<ul class="nav nav-tabs mb-4" id="calculatorTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(isSip ? "active" : "")" id="sip-tab" data-bs-toggle="tab" data-bs-target="#sip"
+                type="button" role="tab" aria-controls="sip" aria-selected="@(isSip ? "true" : "false")">
+            <i class="bi bi-arrow-repeat me-1"></i>SIP Calculator
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(!isSip ? "active" : "")" id="lumpsum-tab" data-bs-toggle="tab" data-bs-target="#lumpsum"
+                type="button" role="tab" aria-controls="lumpsum" aria-selected="@(!isSip ? "true" : "false")">
+            <i class="bi bi-cash-coin me-1"></i>Lump Sum Calculator
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="calculatorTabContent">
+    <!-- SIP Tab -->
+    <div class="tab-pane fade @(isSip ? "show active" : "")" id="sip" role="tabpanel" aria-labelledby="sip-tab">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-arrow-repeat me-2 text-primary"></i>SIP Calculator</h5>
+                <small class="text-muted">Calculate returns on your monthly Systematic Investment Plan</small>
+            </div>
+            <div class="card-body">
+                <form asp-action="CalculateSip" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="CalculatorType" value="SIP" />
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="MonthlyInvestment" class="form-label fw-bold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-currency-rupee"></i></span>
+                                <input asp-for="MonthlyInvestment" class="form-control" placeholder="e.g. 5000" />
+                            </div>
+                            <span asp-validation-for="MonthlyInvestment" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="TimePeriodYears" class="form-label fw-bold"></label>
+                            <div class="input-group">
+                                <input asp-for="TimePeriodYears" class="form-control" placeholder="e.g. 10" />
+                                <span class="input-group-text">Years</span>
+                            </div>
+                            <span asp-validation-for="TimePeriodYears" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="ExpectedReturnRate" class="form-label fw-bold"></label>
+                            <div class="input-group">
+                                <input asp-for="ExpectedReturnRate" class="form-control" placeholder="e.g. 12" />
+                                <span class="input-group-text">% p.a.</span>
+                            </div>
+                            <span asp-validation-for="ExpectedReturnRate" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-calculator me-1"></i>Calculate
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lump Sum Tab -->
+    <div class="tab-pane fade @(!isSip ? "show active" : "")" id="lumpsum" role="tabpanel" aria-labelledby="lumpsum-tab">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-cash-coin me-2 text-success"></i>Lump Sum Calculator</h5>
+                <small class="text-muted">Calculate returns on your one-time investment</small>
+            </div>
+            <div class="card-body">
+                <form asp-action="CalculateLumpSum" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="CalculatorType" value="LumpSum" />
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="LumpSumAmount" class="form-label fw-bold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-currency-rupee"></i></span>
+                                <input asp-for="LumpSumAmount" class="form-control" placeholder="e.g. 100000" />
+                            </div>
+                            <span asp-validation-for="LumpSumAmount" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="TimePeriodYears" class="form-label fw-bold"></label>
+                            <div class="input-group">
+                                <input asp-for="TimePeriodYears" class="form-control" placeholder="e.g. 5" />
+                                <span class="input-group-text">Years</span>
+                            </div>
+                            <span asp-validation-for="TimePeriodYears" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="ExpectedReturnRate" class="form-label fw-bold"></label>
+                            <div class="input-group">
+                                <input asp-for="ExpectedReturnRate" class="form-control" placeholder="e.g. 10" />
+                                <span class="input-group-text">% p.a.</span>
+                            </div>
+                            <span asp-validation-for="ExpectedReturnRate" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-calculator me-1"></i>Calculate
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Section -->
+@if (Model.HasResult)
+{
+    <div class="mt-4">
+        <h4 class="mb-3"><i class="bi bi-graph-up-arrow me-2"></i>Results</h4>
+
+        <!-- Summary Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card stat-card bg-primary bg-opacity-10">
+                    <div class="card-body text-center">
+                        <div class="stat-label">Total Invested</div>
+                        <div class="stat-value text-primary">@Model.TotalInvested.ToString("C")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card bg-success bg-opacity-10">
+                    <div class="card-body text-center">
+                        <div class="stat-label">Estimated Returns</div>
+                        <div class="stat-value text-success">@Model.EstimatedReturns.ToString("C")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card bg-info bg-opacity-10">
+                    <div class="card-body text-center">
+                        <div class="stat-label">Total Value</div>
+                        <div class="stat-value text-info">@Model.TotalValue.ToString("C")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Growth Chart -->
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-bar-chart-line me-2"></i>Year-by-Year Growth</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @if (Model.HasResult)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const data = @Html.Raw(Model.YearlyBreakdownJson);
+                const ctx = document.getElementById('growthChart').getContext('2d');
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            {
+                                label: 'Amount Invested',
+                                data: data.invested,
+                                borderColor: '#0d6efd',
+                                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                                fill: true,
+                                tension: 0.3
+                            },
+                            {
+                                label: 'Total Value',
+                                data: data.value,
+                                borderColor: '#198754',
+                                backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                                fill: true,
+                                tension: 0.3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return context.dataset.label + ': ' + new Intl.NumberFormat('en-IN', {
+                                            style: 'currency',
+                                            currency: 'INR',
+                                            maximumFractionDigits: 0
+                                        }).format(context.raw);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function (value) {
+                                        return new Intl.NumberFormat('en-IN', {
+                                            style: 'currency',
+                                            currency: 'INR',
+                                            maximumFractionDigits: 0
+                                        }).format(value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
+    }
+}

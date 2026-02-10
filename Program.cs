@@ -8,6 +8,8 @@ using Pratice.Middleware;
 using Pratice.Services;
 using Pratice.Services.Interfaces;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add DbContext with PostgreSQL (Supabase)
@@ -66,6 +68,7 @@ builder.Services.AddScoped<IIncomeService, IncomeService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<INetWorthService, NetWorthService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IInvestmentCalculatorService, InvestmentCalculatorService>();
 
 var app = builder.Build();
 
