@@ -70,6 +70,10 @@ builder.Services.AddScoped<INetWorthService, NetWorthService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IInvestmentCalculatorService, InvestmentCalculatorService>();
 
+// Use PORT env variable for Render
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://+:{port}");
+
 var app = builder.Build();
 
 // Apply migrations and seed data on startup
