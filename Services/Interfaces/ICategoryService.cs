@@ -11,4 +11,5 @@ public interface ICategoryService
     Category? GetById(Guid id, string userId);
     SelectList GetExpenseCategorySelectList(string userId, Guid? selectedId = null);
     SelectList GetIncomeCategorySelectList(string userId, Guid? selectedId = null);
+    Category CreateExpenseCategory(string name, string userId);
 }

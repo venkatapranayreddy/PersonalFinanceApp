@@ -54,4 +54,24 @@ public class CategoryService : ICategoryService
     {
         return new SelectList(GetIncomeCategories(userId), "Id", "Name", selectedId);
     }
+
+    public Category CreateExpenseCategory(string name, string userId)
+    {
+        var category = new Category
+        {
+            Id = Guid.NewGuid(),
+            Name = name.Trim(),
+            Icon = "bi-tag",
+            Color = "#6c757d",
+            IsDefault = false,
+            IsExpenseCategory = true,
+            IsIncomeCategory = false,
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Categories.Add(category);
+        _context.SaveChanges();
+        return category;
+    }
 }
