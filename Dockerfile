@@ -6,7 +6,7 @@ WORKDIR /src
 COPY ["Pratice.csproj", "."]
 RUN dotnet restore
 COPY . .
-RUN dotnet publish -c Release -o /app/publish
+RUN dotnet publish Pratice.csproj -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
