@@ -40,7 +40,7 @@
                         <div class="col-md-4">
                             <label asp-for="MonthlyInvestment" class="form-label fw-bold"></label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-currency-rupee"></i></span>
+                                <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
                                 <input asp-for="MonthlyInvestment" class="form-control" placeholder="e.g. 5000" />
                             </div>
                             <span asp-validation-for="MonthlyInvestment" class="text-danger small"></span>
@@ -87,7 +87,7 @@
                         <div class="col-md-4">
                             <label asp-for="LumpSumAmount" class="form-label fw-bold"></label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-currency-rupee"></i></span>
+                                <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
                                 <input asp-for="LumpSumAmount" class="form-control" placeholder="e.g. 100000" />
                             </div>
                             <span asp-validation-for="LumpSumAmount" class="text-danger small"></span>
@@ -209,9 +209,9 @@
                             tooltip: {
                                 callbacks: {
                                     label: function (context) {
-                                        return context.dataset.label + ': ' + new Intl.NumberFormat('en-IN', {
+                                        return context.dataset.label + ': ' + new Intl.NumberFormat('en-US', {
                                             style: 'currency',
-                                            currency: 'INR',
+                                            currency: 'USD',
                                             maximumFractionDigits: 0
                                         }).format(context.raw);
                                     }
@@ -223,9 +223,9 @@
                                 beginAtZero: true,
                                 ticks: {
                                     callback: function (value) {
-                                        return new Intl.NumberFormat('en-IN', {
+                                        return new Intl.NumberFormat('en-US', {
                                             style: 'currency',
-                                            currency: 'INR',
+                                            currency: 'USD',
                                             maximumFractionDigits: 0
                                         }).format(value);
                                     }

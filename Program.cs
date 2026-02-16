@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -8,6 +9,11 @@ using Pratice.Middleware;
 using Pratice.Services;
 using Pratice.Services.Interfaces;
 using Microsoft.AspNetCore.HttpOverrides;
+
+// Set default culture to en-US so all .ToString("C") renders as USD ($)
+var usCulture = new CultureInfo("en-US");
+CultureInfo.DefaultThreadCurrentCulture = usCulture;
+CultureInfo.DefaultThreadCurrentUICulture = usCulture;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
