@@ -7,6 +7,7 @@ using Pratice.Models;
 using Pratice.Middleware;
 using Pratice.Services;
 using Pratice.Services.Interfaces;
+using Microsoft.AspNetCore.HttpOverrides;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -84,15 +85,18 @@ using (var scope = app.Services.CreateScope())
     await SeedData.InitializeAsync(context);
 }
 
+// Forward headers from Render's reverse proxy (fixes Google OAuth redirect_uri)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-
-app.UseSecurityHeaders();
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
