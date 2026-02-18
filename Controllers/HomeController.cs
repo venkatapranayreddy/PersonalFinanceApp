@@ -12,23 +12,30 @@ public class HomeController : BaseController
     private readonly IBudgetService _budgetService;
     private readonly INetWorthService _netWorthService;
     private readonly ICategoryService _categoryService;
+    private readonly IRetirementService _retirementService;
 
     public HomeController(
         IExpenseService expenseService,
         IIncomeService incomeService,
         IBudgetService budgetService,
         INetWorthService netWorthService,
-        ICategoryService categoryService)
+        ICategoryService categoryService,
+        IRetirementService retirementService)
     {
         _expenseService = expenseService;
         _incomeService = incomeService;
         _budgetService = budgetService;
         _netWorthService = netWorthService;
         _categoryService = categoryService;
+        _retirementService = retirementService;
     }
 
     public IActionResult Index()
     {
+        // Redirect to onboarding if user hasn't set up retirement profile
+        if (!_retirementService.HasProfile(UserId))
+            return RedirectToAction("Onboarding", "Retirement");
+
         var now = DateTime.Today;
         var month = now.Month;
         var year = now.Year;

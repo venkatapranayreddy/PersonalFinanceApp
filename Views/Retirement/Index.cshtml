@@ -1,0 +1,557 @@
+@model RetirementViewModel
+@{
+    ViewData["Title"] = "Retirement Timeline";
+    var maxSavings = Model.MonthlyIncome - Model.MonthlyExpenses;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-hourglass-split me-2"></i>Retirement Timeline</h2>
+    <a asp-action="Onboarding" class="btn btn-outline-secondary">
+        <i class="bi bi-pencil me-1"></i>Edit Profile
+    </a>
+</div>
+
+<!-- Section A: Summary Stat Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card bg-primary bg-opacity-10">
+            <div class="card-body text-center">
+                <i class="bi bi-cash-coin text-primary fs-4"></i>
+                <div class="stat-label mt-1">Monthly Investment</div>
+                <div class="stat-value text-primary" id="statMonthlyInvestment">@Model.MonthlyInvestment.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-warning bg-opacity-10">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-check text-warning fs-4"></i>
+                <div class="stat-label mt-1">Years to Retirement</div>
+                <div class="stat-value text-warning" id="statYears">@Model.YearsToRetirement</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-success bg-opacity-10">
+            <div class="card-body text-center">
+                <i class="bi bi-graph-up-arrow text-success fs-4"></i>
+                <div class="stat-label mt-1">Expected Corpus</div>
+                <div class="stat-value text-success" id="statCorpus">@Model.ExpectedCorpus.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card @(Model.GoalAchievable ? "bg-success" : "bg-danger") bg-opacity-10">
+            <div class="card-body text-center">
+                <i class="bi @(Model.GoalAchievable ? "bi-check-circle text-success" : "bi-exclamation-triangle text-danger") fs-4"></i>
+                <div class="stat-label mt-1">Goal: @Model.RetirementGoalAmount.ToString("C")</div>
+                <div class="stat-value @(Model.GoalAchievable ? "text-success" : "text-danger")" id="statGoalStatus">
+                    @if (Model.MonthsToReachGoal.HasValue)
+                    {
+                        var yrs = Model.MonthsToReachGoal.Value / 12;
+                        var mos = Model.MonthsToReachGoal.Value % 12;
+                        @($"{yrs}y {mos}m")
+                    }
+                    else
+                    {
+                        @("Not on track")
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section B: Adjustment Controls -->
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <h5 class="card-title mb-0"><i class="bi bi-sliders me-2"></i>Adjust Your Plan</h5>
+        <small class="text-muted">Change values and click "Update Plan". Max investment: <strong>@maxSavings.ToString("C")</strong>/mo (your savings)</small>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Current Age</label>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="adjAge" value="@Model.CurrentAge" min="18" max="100" />
+                    <span class="input-group-text">yrs</span>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Retire At</label>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="adjRetireAge" value="@Model.RetirementAge" min="30" max="100" />
+                    <span class="input-group-text">yrs</span>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Monthly Investment</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                    <input type="number" class="form-control" id="adjInvestment" value="@Model.MonthlyInvestment" min="1" step="100" />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Goal Amount</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                    <input type="number" class="form-control" id="adjGoal" value="@Model.RetirementGoalAmount" min="1" step="10000" />
+                </div>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label fw-bold">Rate</label>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="adjRate" value="@Model.ExpectedReturnRate" min="1" max="30" step="0.5" />
+                    <span class="input-group-text">%</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-primary w-100" id="updatePlanBtn" onclick="updatePlan()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Update Plan
+                </button>
+            </div>
+        </div>
+
+        <!-- Step-Up Controls -->
+        <div class="mt-3 pt-3 border-top">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label fw-bold mb-0"><i class="bi bi-graph-up me-1"></i>Step-Up Schedule</label>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addTimelineStepUp()">
+                    <i class="bi bi-plus-lg me-1"></i>Add Step-Up
+                </button>
+            </div>
+            <div id="timelineStepUpsContainer">
+                @if (Model.StepUps != null && Model.StepUps.Count > 0)
+                {
+                    for (int i = 0; i < Model.StepUps.Count; i++)
+                    {
+                        <div class="step-up-row mb-2">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-5">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">After month</span>
+                                        <input type="number" class="form-control tl-step-month" value="@Model.StepUps[i].AfterMonth" min="1" />
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                                        <input type="number" class="form-control tl-step-amount" value="@Model.StepUps[i].Amount" min="1" step="100" />
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeTimelineStepUp(this)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section C: Growth Chart -->
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <h5 class="card-title mb-0"><i class="bi bi-bar-chart-line me-2"></i>Investment Growth Over Time</h5>
+    </div>
+    <div class="card-body">
+        <div class="chart-container">
+            <canvas id="retirementChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Section D: Year-by-Year Table -->
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <h5 class="card-title mb-0"><i class="bi bi-table me-2"></i>Year-by-Year Breakdown</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Year</th>
+                        <th>Age</th>
+                        <th class="text-end">Monthly Amt</th>
+                        <th class="text-end">Cumulative Invested</th>
+                        <th class="text-end">Expected Value</th>
+                        <th class="text-end">Returns Earned</th>
+                    </tr>
+                </thead>
+                <tbody id="breakdownTableBody">
+                    @foreach (var row in Model.YearlyBreakdownTable)
+                    {
+                        <tr>
+                            <td>Year @row.Year</td>
+                            <td>@row.Age</td>
+                            <td class="text-end">@row.MonthlyInvestmentAmount.ToString("C")</td>
+                            <td class="text-end">@row.AmountInvested.ToString("C")</td>
+                            <td class="text-end text-success fw-bold">@row.ExpectedValue.ToString("C")</td>
+                            <td class="text-end text-primary">@row.ReturnsEarned.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Section E: Recommendation Card -->
+<div class="card retirement-recommendation mb-4" id="recommendationCard">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-1 text-center">
+                <i class="bi bi-lightbulb-fill text-warning fs-1"></i>
+            </div>
+            <div class="col-md-7">
+                <h5 class="mb-1">Retirement Plan Recommendation</h5>
+                <div id="recommendationText">
+                    @if (Model.GoalAchievable)
+                    {
+                        <p class="mb-0 text-success">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Your plan is on track to reach your goal of <strong>@Model.RetirementGoalAmount.ToString("C")</strong>
+                            @if (Model.MonthsToReachGoal.HasValue)
+                            {
+                                var yrs = Model.MonthsToReachGoal.Value / 12;
+                                var mos = Model.MonthsToReachGoal.Value % 12;
+                                <text>in <strong>@yrs years @mos months</strong></text>
+                            }
+                            . Your expected corpus of <strong>@Model.ExpectedCorpus.ToString("C")</strong> exceeds your goal!
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="mb-1">
+                            Your goal is <strong>@Model.RetirementGoalAmount.ToString("C")</strong> but your current plan
+                            will only reach <strong>@Model.ExpectedCorpus.ToString("C")</strong> by retirement.
+                        </p>
+                        <p class="mb-0 text-danger">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            Consider investing <strong>@Model.RecommendedMonthlyInvestment.ToString("C")/month</strong>
+                            (without step-ups) to reach your goal on time.
+                        </p>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light border-0">
+                    <div class="card-body text-center py-3">
+                        <small class="text-muted d-block">Your Expected Corpus</small>
+                        <div class="fs-5 fw-bold text-primary" id="recCurrent">@Model.ExpectedCorpus.ToString("C")</div>
+                        <hr class="my-2">
+                        <small class="text-muted d-block">Your Goal</small>
+                        <div class="fs-5 fw-bold @(Model.GoalAchievable ? "text-success" : "text-danger")" id="recGoal">@Model.RetirementGoalAmount.ToString("C")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @if (Model.EmploymentStatus == EmploymentStatus.Employed)
+        {
+            <div class="mt-3 p-2 bg-light rounded">
+                <small><i class="bi bi-info-circle me-1 text-primary"></i><strong>Tip:</strong> As an employee, consider maximizing your 401(k) contributions and employer match before additional investments.</small>
+            </div>
+        }
+        else if (Model.EmploymentStatus == EmploymentStatus.Entrepreneur)
+        {
+            <div class="mt-3 p-2 bg-light rounded">
+                <small><i class="bi bi-info-circle me-1 text-primary"></i><strong>Tip:</strong> As an entrepreneur, consider setting up a SEP-IRA or Solo 401(k) for higher contribution limits and tax advantages.</small>
+            </div>
+        }
+        else
+        {
+            <div class="mt-3 p-2 bg-light rounded">
+                <small><i class="bi bi-info-circle me-1 text-primary"></i><strong>Tip:</strong> Focus on building an emergency fund first, then start with even small monthly investments — consistency matters more than amount.</small>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Profile Summary -->
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <h5 class="card-title mb-0"><i class="bi bi-person me-2"></i>Your Profile</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-2">
+                <small class="text-muted d-block">Age</small>
+                <strong>@Model.CurrentAge years</strong>
+            </div>
+            <div class="col-md-2">
+                <small class="text-muted d-block">Status</small>
+                <strong>@Model.EmploymentStatus</strong>
+            </div>
+            <div class="col-md-2">
+                <small class="text-muted d-block">Monthly Income</small>
+                <strong>@Model.MonthlyIncome.ToString("C")</strong>
+            </div>
+            <div class="col-md-2">
+                <small class="text-muted d-block">Monthly Expenses</small>
+                <strong>@Model.MonthlyExpenses.ToString("C")</strong>
+            </div>
+            <div class="col-md-2">
+                <small class="text-muted d-block">Monthly Savings</small>
+                <strong class="@(Model.MonthlySavings >= 0 ? "text-success" : "text-danger")">@Model.MonthlySavings.ToString("C")</strong>
+            </div>
+            <div class="col-md-2">
+                <small class="text-muted d-block">Savings Rate</small>
+                <strong>@(Model.MonthlyIncome > 0 ? (Model.MonthlySavings / Model.MonthlyIncome * 100).ToString("F1") + "%" : "N/A")</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let retirementChart = null;
+        const maxSavings = @maxSavings;
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency', currency: 'USD', maximumFractionDigits: 0
+            }).format(value);
+        }
+
+        function initChart(chartData) {
+            const data = typeof chartData === 'string' ? JSON.parse(chartData) : chartData;
+            const ctx = document.getElementById('retirementChart').getContext('2d');
+
+            if (retirementChart) retirementChart.destroy();
+
+            const goalAmount = data.goalAmount || parseFloat(document.getElementById('adjGoal').value) || 0;
+
+            // Build goal line data (horizontal line at goal amount)
+            const goalLine = data.labels.map(() => goalAmount);
+
+            retirementChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Amount Invested',
+                            data: data.invested,
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Expected Value',
+                            data: data.value,
+                            borderColor: '#198754',
+                            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Goal Amount',
+                            data: goalLine,
+                            borderColor: '#dc3545',
+                            borderDash: [8, 4],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.raw);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) { return formatCurrency(value); }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function getTimelineStepUps() {
+            const stepUps = [];
+            document.querySelectorAll('#timelineStepUpsContainer .step-up-row').forEach(row => {
+                const month = parseInt(row.querySelector('.tl-step-month').value);
+                const amount = parseFloat(row.querySelector('.tl-step-amount').value);
+                if (month > 0 && amount > 0) stepUps.push({ afterMonth: month, amount: amount });
+            });
+            return stepUps;
+        }
+
+        function addTimelineStepUp() {
+            const container = document.getElementById('timelineStepUpsContainer');
+            const html = `
+                <div class="step-up-row mb-2">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-5">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">After month</span>
+                                <input type="number" class="form-control tl-step-month" min="1" placeholder="e.g. 6" />
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                                <input type="number" class="form-control tl-step-amount" min="1" step="100" placeholder="e.g. 2000" />
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeTimelineStepUp(this)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        function removeTimelineStepUp(btn) {
+            btn.closest('.step-up-row').remove();
+        }
+
+        function updatePlan() {
+            const btn = document.getElementById('updatePlanBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Updating...';
+
+            const age = parseInt(document.getElementById('adjAge').value);
+            const retireAge = parseInt(document.getElementById('adjRetireAge').value);
+            const investment = parseFloat(document.getElementById('adjInvestment').value);
+            const rate = parseFloat(document.getElementById('adjRate').value);
+            const goalAmount = parseFloat(document.getElementById('adjGoal').value);
+            const stepUps = getTimelineStepUps();
+
+            if (retireAge <= age) {
+                alert('Retirement age must be greater than current age.');
+                resetBtn(); return;
+            }
+            if (investment > maxSavings) {
+                alert('Monthly investment (' + formatCurrency(investment) + ') cannot exceed your monthly savings (' + formatCurrency(maxSavings) + ').');
+                resetBtn(); return;
+            }
+            for (const s of stepUps) {
+                if (s.amount > maxSavings) {
+                    alert('Step-up amount (' + formatCurrency(s.amount) + ') cannot exceed your monthly savings (' + formatCurrency(maxSavings) + ').');
+                    resetBtn(); return;
+                }
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            const formData = new URLSearchParams();
+            formData.append('CurrentAge', age);
+            formData.append('RetirementAge', retireAge);
+            formData.append('MonthlyInvestment', investment);
+            formData.append('ExpectedReturnRate', rate);
+            formData.append('RetirementGoalAmount', goalAmount);
+            formData.append('MonthlyExpenses', '@Model.MonthlyExpenses');
+            formData.append('MonthlyIncome', '@Model.MonthlyIncome');
+            formData.append('__RequestVerificationToken', token);
+
+            stepUps.forEach((s, i) => {
+                formData.append(`StepUps[${i}].AfterMonth`, s.afterMonth);
+                formData.append(`StepUps[${i}].Amount`, s.amount);
+            });
+
+            fetch('/Retirement/UpdatePlan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Update stat cards
+                    document.getElementById('statMonthlyInvestment').textContent = formatCurrency(investment);
+                    document.getElementById('statYears').textContent = data.yearsToRetirement;
+                    document.getElementById('statCorpus').textContent = formatCurrency(data.expectedCorpus);
+
+                    // Update goal status card
+                    const goalStatusEl = document.getElementById('statGoalStatus');
+                    if (data.monthsToReachGoal) {
+                        const yrs = Math.floor(data.monthsToReachGoal / 12);
+                        const mos = data.monthsToReachGoal % 12;
+                        goalStatusEl.textContent = yrs + 'y ' + mos + 'm';
+                        goalStatusEl.className = 'stat-value text-success';
+                    } else {
+                        goalStatusEl.textContent = 'Not on track';
+                        goalStatusEl.className = 'stat-value text-danger';
+                    }
+
+                    // Update chart
+                    const chartData = typeof data.yearlyBreakdownJson === 'string'
+                        ? JSON.parse(data.yearlyBreakdownJson) : data.yearlyBreakdownJson;
+                    initChart(chartData);
+
+                    // Update table
+                    const tbody = document.getElementById('breakdownTableBody');
+                    tbody.innerHTML = '';
+                    data.yearlyBreakdownTable.forEach(row => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>Year ${row.year}</td>
+                                <td>${row.age}</td>
+                                <td class="text-end">${formatCurrency(row.monthlyInvestmentAmount)}</td>
+                                <td class="text-end">${formatCurrency(row.amountInvested)}</td>
+                                <td class="text-end text-success fw-bold">${formatCurrency(row.expectedValue)}</td>
+                                <td class="text-end text-primary">${formatCurrency(row.returnsEarned)}</td>
+                            </tr>`;
+                    });
+
+                    // Update recommendation
+                    const recText = document.getElementById('recommendationText');
+                    document.getElementById('recCurrent').textContent = formatCurrency(data.expectedCorpus);
+                    document.getElementById('recGoal').textContent = formatCurrency(goalAmount);
+                    document.getElementById('recGoal').className = 'fs-5 fw-bold ' + (data.goalAchievable ? 'text-success' : 'text-danger');
+
+                    if (data.goalAchievable && data.monthsToReachGoal) {
+                        const yrs = Math.floor(data.monthsToReachGoal / 12);
+                        const mos = data.monthsToReachGoal % 12;
+                        recText.innerHTML = `<p class="mb-0 text-success"><i class="bi bi-check-circle me-1"></i>Your plan is on track to reach your goal of <strong>${formatCurrency(goalAmount)}</strong> in <strong>${yrs} years ${mos} months</strong>. Your expected corpus of <strong>${formatCurrency(data.expectedCorpus)}</strong> exceeds your goal!</p>`;
+                    } else {
+                        recText.innerHTML = `<p class="mb-1">Your goal is <strong>${formatCurrency(goalAmount)}</strong> but your current plan will only reach <strong>${formatCurrency(data.expectedCorpus)}</strong> by retirement.</p>
+                            <p class="mb-0 text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Consider investing <strong>${formatCurrency(data.recommendedMonthlyInvestment)}/month</strong> (without step-ups) to reach your goal on time.</p>`;
+                    }
+                } else {
+                    alert(data.error || 'Failed to update plan.');
+                }
+                resetBtn();
+            })
+            .catch(err => {
+                console.error(err);
+                alert('An error occurred. Please try again.');
+                resetBtn();
+            });
+
+            function resetBtn() {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Update Plan';
+            }
+        }
+
+        // Initialize chart on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            initChart(@Html.Raw(Model.YearlyBreakdownJson));
+        });
+    </script>
+
+    @Html.AntiForgeryToken()
+}

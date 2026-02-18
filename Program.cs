@@ -76,6 +76,7 @@ builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<INetWorthService, NetWorthService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IInvestmentCalculatorService, InvestmentCalculatorService>();
+builder.Services.AddScoped<IRetirementService, RetirementService>();
 
 // Use PORT env variable for Render
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";

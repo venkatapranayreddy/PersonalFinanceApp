@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pratice.Data;
@@ -11,9 +12,11 @@ using Pratice.Data;
 namespace Pratice.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260217103519_AddRetirementProfile")]
+    partial class AddRetirementProfile
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -457,28 +460,6 @@ namespace Pratice.Data.Migrations
                     b.ToTable("Incomes");
                 });
 
-            modelBuilder.Entity("Pratice.Models.InvestmentStepUp", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("AfterMonth")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid>("RetirementProfileId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RetirementProfileId");
-
-                    b.ToTable("InvestmentStepUps");
-                });
-
             modelBuilder.Entity("Pratice.Models.Liability", b =>
                 {
                     b.Property<Guid>("Id")
@@ -552,9 +533,6 @@ namespace Pratice.Data.Migrations
 
                     b.Property<int>("RetirementAge")
                         .HasColumnType("integer");
-
-                    b.Property<decimal>("RetirementGoalAmount")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -700,17 +678,6 @@ namespace Pratice.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Pratice.Models.InvestmentStepUp", b =>
-                {
-                    b.HasOne("Pratice.Models.RetirementProfile", "RetirementProfile")
-                        .WithMany("StepUps")
-                        .HasForeignKey("RetirementProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("RetirementProfile");
-                });
-
             modelBuilder.Entity("Pratice.Models.Liability", b =>
                 {
                     b.HasOne("Pratice.Models.ApplicationUser", "User")
@@ -731,11 +698,6 @@ namespace Pratice.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Pratice.Models.RetirementProfile", b =>
-                {
-                    b.Navigation("StepUps");
                 });
 #pragma warning restore 612, 618
         }

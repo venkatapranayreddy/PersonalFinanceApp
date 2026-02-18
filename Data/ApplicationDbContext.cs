@@ -15,6 +15,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Asset> Assets { get; set; }
     public DbSet<Liability> Liabilities { get; set; }
     public DbSet<Category> Categories { get; set; }
+    public DbSet<RetirementProfile> RetirementProfiles { get; set; }
+    public DbSet<InvestmentStepUp> InvestmentStepUps { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -71,6 +73,31 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.MinimumPayment).HasColumnType("decimal(18,2)");
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => e.UserId);
+        });
+
+        // RetirementProfile
+        builder.Entity<RetirementProfile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.MonthlyIncome).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.MonthlyExpenses).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.MonthlyInvestment).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.ExpectedReturnRate).HasColumnType("decimal(5,2)");
+            entity.Property(e => e.RetirementGoalAmount).HasColumnType("decimal(18,2)");
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.UserId).IsUnique();
+        });
+
+        // InvestmentStepUp
+        builder.Entity<InvestmentStepUp>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+            entity.HasOne(e => e.RetirementProfile)
+                  .WithMany(r => r.StepUps)
+                  .HasForeignKey(e => e.RetirementProfileId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.RetirementProfileId);
         });
 
         // Category — nullable UserId for shared categories

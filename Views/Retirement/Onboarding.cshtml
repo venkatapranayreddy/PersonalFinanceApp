@@ -1,0 +1,594 @@
+@model RetirementViewModel
+@{
+    ViewData["Title"] = "Retirement Planning Setup";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="text-center mb-4">
+            <h2 class="mb-1"><i class="bi bi-hourglass-split me-2"></i>Plan Your Retirement</h2>
+            <p class="text-muted">Let's set up your personalized retirement plan in a few simple steps.</p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="wizard-progress mb-4">
+            <div class="d-flex justify-content-between position-relative">
+                <div class="wizard-step active" data-step="1">
+                    <div class="wizard-step-circle">1</div>
+                    <div class="wizard-step-label">Personal</div>
+                </div>
+                <div class="wizard-step" data-step="2">
+                    <div class="wizard-step-circle">2</div>
+                    <div class="wizard-step-label">Finances</div>
+                </div>
+                <div class="wizard-step" data-step="3">
+                    <div class="wizard-step-circle">3</div>
+                    <div class="wizard-step-label">Retirement</div>
+                </div>
+                <div class="wizard-step" data-step="4">
+                    <div class="wizard-step-circle">4</div>
+                    <div class="wizard-step-label">Preview</div>
+                </div>
+                <div class="wizard-progress-bar">
+                    <div class="wizard-progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger alert-dismissible fade show mb-3">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <form asp-action="SaveProfile" method="post" id="retirementForm">
+            @Html.AntiForgeryToken()
+
+            <!-- Step 1: Personal Info -->
+            <div class="wizard-panel active" id="step1">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0"><i class="bi bi-person me-2 text-primary"></i>Personal Information</h5>
+                        <small class="text-muted">Tell us a bit about yourself</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <label asp-for="CurrentAge" class="form-label fw-bold">How old are you?</label>
+                            <div class="input-group" style="max-width: 200px;">
+                                <input asp-for="CurrentAge" class="form-control form-control-lg" placeholder="e.g. 25" />
+                                <span class="input-group-text">years</span>
+                            </div>
+                            <span asp-validation-for="CurrentAge" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="EmploymentStatus" class="form-label fw-bold">What's your current employment status?</label>
+                            <div class="row g-3 mt-1">
+                                <div class="col-md-4">
+                                    <input type="radio" class="btn-check" name="EmploymentStatus" id="statusEmployed" value="Employed"
+                                           @(Model.EmploymentStatus == EmploymentStatus.Employed ? "checked" : "") >
+                                    <label class="btn btn-outline-primary w-100 py-3" for="statusEmployed">
+                                        <i class="bi bi-briefcase d-block fs-3 mb-1"></i>
+                                        Employed
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="radio" class="btn-check" name="EmploymentStatus" id="statusUnemployed" value="Unemployed"
+                                           @(Model.EmploymentStatus == EmploymentStatus.Unemployed ? "checked" : "") >
+                                    <label class="btn btn-outline-primary w-100 py-3" for="statusUnemployed">
+                                        <i class="bi bi-search d-block fs-3 mb-1"></i>
+                                        Unemployed
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="radio" class="btn-check" name="EmploymentStatus" id="statusEntrepreneur" value="Entrepreneur"
+                                           @(Model.EmploymentStatus == EmploymentStatus.Entrepreneur ? "checked" : "") >
+                                    <label class="btn btn-outline-primary w-100 py-3" for="statusEntrepreneur">
+                                        <i class="bi bi-rocket-takeoff d-block fs-3 mb-1"></i>
+                                        Entrepreneur
+                                    </label>
+                                </div>
+                            </div>
+                            <span asp-validation-for="EmploymentStatus" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="button" class="btn btn-primary btn-lg" onclick="nextStep(2)">
+                        Next <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Financial Info -->
+            <div class="wizard-panel" id="step2">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0"><i class="bi bi-cash-stack me-2 text-success"></i>Financial Information</h5>
+                        <small class="text-muted">Help us understand your current financial situation</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label asp-for="MonthlyIncome" class="form-label fw-bold">Monthly Income</label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                                    <input asp-for="MonthlyIncome" class="form-control" placeholder="e.g. 5000" />
+                                </div>
+                                <small class="text-muted">Your total monthly income before taxes</small>
+                                <span asp-validation-for="MonthlyIncome" class="text-danger small d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="MonthlyExpenses" class="form-label fw-bold">Monthly Expenses</label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                                    <input asp-for="MonthlyExpenses" class="form-control" placeholder="e.g. 3000" />
+                                </div>
+                                <small class="text-muted">Your average monthly spending</small>
+                                <span asp-validation-for="MonthlyExpenses" class="text-danger small d-block"></span>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-light rounded" id="savingsPreview" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-piggy-bank text-success fs-4 me-3"></i>
+                                <div>
+                                    <small class="text-muted">Your Monthly Savings (Max Investment)</small>
+                                    <div class="fw-bold fs-5" id="monthlySavingsDisplay">$0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between mt-3">
+                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="prevStep(1)">
+                        <i class="bi bi-arrow-left me-1"></i> Back
+                    </button>
+                    <button type="button" class="btn btn-primary btn-lg" onclick="nextStep(3)">
+                        Next <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Retirement Goal -->
+            <div class="wizard-panel" id="step3">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0"><i class="bi bi-flag me-2 text-warning"></i>Retirement Goal</h5>
+                        <small class="text-muted">Set your retirement target and investment plan</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <label asp-for="RetirementAge" class="form-label fw-bold">Retire at age</label>
+                                <div class="input-group input-group-lg" style="max-width: 180px;">
+                                    <input asp-for="RetirementAge" class="form-control" placeholder="e.g. 60" />
+                                    <span class="input-group-text">years</span>
+                                </div>
+                                <span asp-validation-for="RetirementAge" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="RetirementGoalAmount" class="form-label fw-bold">Goal Amount</label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                                    <input asp-for="RetirementGoalAmount" class="form-control" placeholder="e.g. 1000000" />
+                                </div>
+                                <small class="text-muted">How much you want saved by retirement</small>
+                                <span asp-validation-for="RetirementGoalAmount" class="text-danger small d-block"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="MonthlyInvestment" class="form-label fw-bold">Monthly Investment</label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                                    <input asp-for="MonthlyInvestment" class="form-control" placeholder="e.g. 1000" id="monthlyInvestmentInput" />
+                                </div>
+                                <small class="text-muted" id="maxInvestmentHint"></small>
+                                <span asp-validation-for="MonthlyInvestment" class="text-danger small d-block"></span>
+                            </div>
+                        </div>
+
+                        <input type="hidden" asp-for="ExpectedReturnRate" value="12" />
+
+                        <!-- Step-Up Section -->
+                        <div class="mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold mb-0">
+                                    <i class="bi bi-graph-up me-1"></i>Step-Up Investments <small class="text-muted fw-normal">(optional)</small>
+                                </label>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addStepUp()">
+                                    <i class="bi bi-plus-lg me-1"></i>Add Step-Up
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mb-3">Increase your monthly investment after a set number of months to reach your goal faster.</small>
+                            <div id="stepUpsContainer">
+                                @if (Model.StepUps != null && Model.StepUps.Count > 0)
+                                {
+                                    for (int i = 0; i < Model.StepUps.Count; i++)
+                                    {
+                                        <div class="step-up-row mb-2">
+                                            <div class="row g-2 align-items-center">
+                                                <div class="col-md-5">
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">After month</span>
+                                                        <input type="number" name="StepUps[@i].AfterMonth" class="form-control step-up-month"
+                                                               value="@Model.StepUps[i].AfterMonth" min="1" placeholder="e.g. 6" />
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <div class="input-group">
+                                                        <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                                                        <input type="number" name="StepUps[@i].Amount" class="form-control step-up-amount"
+                                                               value="@Model.StepUps[i].Amount" min="1" step="100" placeholder="e.g. 2000" />
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeStepUp(this)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-light rounded" id="quickCalcPreview" style="display: none;">
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block">Years to Retirement</small>
+                                    <div class="fw-bold fs-5 text-primary" id="previewYears">-</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block">Total You'll Invest</small>
+                                    <div class="fw-bold fs-5 text-primary" id="previewInvested">-</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block">Expected Corpus (12% p.a.)</small>
+                                    <div class="fw-bold fs-5 text-success" id="previewCorpus">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between mt-3">
+                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="prevStep(2)">
+                        <i class="bi bi-arrow-left me-1"></i> Back
+                    </button>
+                    <button type="button" class="btn btn-primary btn-lg" onclick="nextStep(4)">
+                        Preview Plan <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Preview & Save -->
+            <div class="wizard-panel" id="step4">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0"><i class="bi bi-check-circle me-2 text-success"></i>Your Retirement Plan Preview</h5>
+                        <small class="text-muted">Review your plan before saving</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <h6 class="text-muted mb-3"><i class="bi bi-person me-1"></i> Personal</h6>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Age:</span>
+                                            <strong id="summaryAge">-</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Status:</span>
+                                            <strong id="summaryStatus">-</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Retire at:</span>
+                                            <strong id="summaryRetireAge">-</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <h6 class="text-muted mb-3"><i class="bi bi-cash-stack me-1"></i> Finances</h6>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Monthly Income:</span>
+                                            <strong id="summaryIncome">-</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Monthly Investment:</span>
+                                            <strong id="summaryInvestment">-</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Goal Amount:</span>
+                                            <strong id="summaryGoal">-</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="summaryStepUps" style="display: none;" class="mb-4">
+                            <div class="card bg-light border-0">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-2"><i class="bi bi-graph-up me-1"></i> Step-Up Schedule</h6>
+                                    <div id="summaryStepUpsList"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="card stat-card bg-primary bg-opacity-10 border-0">
+                                    <div class="card-body text-center">
+                                        <div class="stat-label">Years to Retirement</div>
+                                        <div class="stat-value text-primary" id="summaryYears">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card stat-card bg-info bg-opacity-10 border-0">
+                                    <div class="card-body text-center">
+                                        <div class="stat-label">Total Investment</div>
+                                        <div class="stat-value text-info" id="summaryTotal">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card stat-card bg-success bg-opacity-10 border-0">
+                                    <div class="card-body text-center">
+                                        <div class="stat-label">Expected Corpus</div>
+                                        <div class="stat-value text-success" id="summaryCorpus">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between mt-3">
+                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="prevStep(3)">
+                        <i class="bi bi-arrow-left me-1"></i> Back
+                    </button>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-check-lg me-1"></i> Save & View Timeline
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentStep = 1;
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency', currency: 'USD', maximumFractionDigits: 0
+            }).format(value);
+        }
+
+        function getMonthlySavings() {
+            const income = parseFloat(document.querySelector('[name="MonthlyIncome"]').value) || 0;
+            const expenses = parseFloat(document.querySelector('[name="MonthlyExpenses"]').value) || 0;
+            return income - expenses;
+        }
+
+        function nextStep(step) {
+            if (!validateStep(currentStep)) return;
+            currentStep = step;
+            showStep(step);
+            updateProgress(step);
+            if (step === 3) { updateQuickCalc(); updateMaxInvestmentHint(); }
+            if (step === 4) updateSummary();
+        }
+
+        function prevStep(step) {
+            currentStep = step;
+            showStep(step);
+            updateProgress(step);
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('step' + step).classList.add('active');
+        }
+
+        function updateProgress(step) {
+            const fill = ((step - 1) / 3) * 100;
+            document.getElementById('progressFill').style.width = fill + '%';
+            document.querySelectorAll('.wizard-step').forEach(s => {
+                const sStep = parseInt(s.dataset.step);
+                s.classList.toggle('active', sStep <= step);
+                s.classList.toggle('completed', sStep < step);
+            });
+        }
+
+        function validateStep(step) {
+            if (step === 1) {
+                const age = parseInt(document.querySelector('[name="CurrentAge"]').value);
+                if (!age || age < 18 || age > 100) { alert('Please enter a valid age (18-100).'); return false; }
+            } else if (step === 2) {
+                const income = parseFloat(document.querySelector('[name="MonthlyIncome"]').value);
+                const expenses = parseFloat(document.querySelector('[name="MonthlyExpenses"]').value);
+                if (!income || income <= 0) { alert('Please enter a valid monthly income.'); return false; }
+                if (isNaN(expenses) || expenses < 0) { alert('Please enter valid monthly expenses.'); return false; }
+                if (expenses >= income) { alert('Monthly expenses must be less than monthly income.'); return false; }
+            } else if (step === 3) {
+                const age = parseInt(document.querySelector('[name="CurrentAge"]').value);
+                const retireAge = parseInt(document.querySelector('[name="RetirementAge"]').value);
+                const investment = parseFloat(document.querySelector('[name="MonthlyInvestment"]').value);
+                const goalAmount = parseFloat(document.querySelector('[name="RetirementGoalAmount"]').value);
+                const savings = getMonthlySavings();
+
+                if (!retireAge || retireAge <= age) { alert('Retirement age must be greater than your current age.'); return false; }
+                if (!goalAmount || goalAmount <= 0) { alert('Please enter a valid retirement goal amount.'); return false; }
+                if (!investment || investment <= 0) { alert('Please enter a valid monthly investment amount.'); return false; }
+                if (investment > savings) {
+                    alert('Monthly investment (' + formatCurrency(investment) + ') cannot exceed your monthly savings (' + formatCurrency(savings) + ').');
+                    return false;
+                }
+                // Validate step-up amounts
+                const stepUpAmounts = document.querySelectorAll('.step-up-amount');
+                for (const input of stepUpAmounts) {
+                    const amt = parseFloat(input.value);
+                    if (amt && amt > savings) {
+                        alert('Step-up amount (' + formatCurrency(amt) + ') cannot exceed your monthly savings (' + formatCurrency(savings) + ').');
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function addStepUp() {
+            const container = document.getElementById('stepUpsContainer');
+            const index = container.querySelectorAll('.step-up-row').length;
+            const html = `
+                <div class="step-up-row mb-2">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text">After month</span>
+                                <input type="number" name="StepUps[${index}].AfterMonth" class="form-control step-up-month"
+                                       min="1" placeholder="e.g. 6" />
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                                <input type="number" name="StepUps[${index}].Amount" class="form-control step-up-amount"
+                                       min="1" step="100" placeholder="e.g. 2000" />
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeStepUp(this)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        function removeStepUp(btn) {
+            btn.closest('.step-up-row').remove();
+            reindexStepUps();
+        }
+
+        function reindexStepUps() {
+            const rows = document.querySelectorAll('.step-up-row');
+            rows.forEach((row, i) => {
+                row.querySelector('.step-up-month').name = `StepUps[${i}].AfterMonth`;
+                row.querySelector('.step-up-amount').name = `StepUps[${i}].Amount`;
+            });
+        }
+
+        function simulateMonthByMonth(monthlyInvestment, years, annualRate, stepUps) {
+            const monthlyRate = annualRate / 12 / 100;
+            const totalMonths = years * 12;
+            let corpus = 0, totalInvested = 0, currentAmount = monthlyInvestment;
+            const sorted = [...stepUps].sort((a, b) => a.afterMonth - b.afterMonth);
+            let stepIdx = 0;
+            for (let m = 1; m <= totalMonths; m++) {
+                while (stepIdx < sorted.length && m > sorted[stepIdx].afterMonth) {
+                    currentAmount = sorted[stepIdx].amount;
+                    stepIdx++;
+                }
+                corpus = corpus * (1 + monthlyRate) + currentAmount;
+                totalInvested += currentAmount;
+            }
+            return { corpus, totalInvested };
+        }
+
+        function getStepUpsFromForm() {
+            const stepUps = [];
+            document.querySelectorAll('.step-up-row').forEach(row => {
+                const month = parseInt(row.querySelector('.step-up-month').value);
+                const amount = parseFloat(row.querySelector('.step-up-amount').value);
+                if (month > 0 && amount > 0) stepUps.push({ afterMonth: month, amount: amount });
+            });
+            return stepUps;
+        }
+
+        function updateQuickCalc() {
+            const age = parseInt(document.querySelector('[name="CurrentAge"]').value) || 0;
+            const retireAge = parseInt(document.querySelector('[name="RetirementAge"]').value) || 0;
+            const investment = parseFloat(document.querySelector('[name="MonthlyInvestment"]').value) || 0;
+            const years = retireAge - age;
+            if (years > 0 && investment > 0) {
+                const result = simulateMonthByMonth(investment, years, 12, getStepUpsFromForm());
+                document.getElementById('previewYears').textContent = years;
+                document.getElementById('previewInvested').textContent = formatCurrency(result.totalInvested);
+                document.getElementById('previewCorpus').textContent = formatCurrency(result.corpus);
+                document.getElementById('quickCalcPreview').style.display = 'block';
+            }
+        }
+
+        function updateMaxInvestmentHint() {
+            const savings = getMonthlySavings();
+            if (savings > 0) {
+                document.getElementById('maxInvestmentHint').textContent = 'Max: ' + formatCurrency(savings) + ' (your monthly savings)';
+            }
+        }
+
+        function updateSummary() {
+            const age = document.querySelector('[name="CurrentAge"]').value;
+            const retireAge = document.querySelector('[name="RetirementAge"]').value;
+            const income = parseFloat(document.querySelector('[name="MonthlyIncome"]').value) || 0;
+            const investment = parseFloat(document.querySelector('[name="MonthlyInvestment"]').value) || 0;
+            const goalAmount = parseFloat(document.querySelector('[name="RetirementGoalAmount"]').value) || 0;
+            const years = retireAge - age;
+            const status = document.querySelector('[name="EmploymentStatus"]:checked');
+            const stepUps = getStepUpsFromForm();
+
+            document.getElementById('summaryAge').textContent = age + ' years';
+            document.getElementById('summaryStatus').textContent = status ? status.value : '-';
+            document.getElementById('summaryRetireAge').textContent = retireAge + ' years';
+            document.getElementById('summaryIncome').textContent = formatCurrency(income);
+            document.getElementById('summaryInvestment').textContent = formatCurrency(investment);
+            document.getElementById('summaryGoal').textContent = formatCurrency(goalAmount);
+            document.getElementById('summaryYears').textContent = years;
+
+            const result = simulateMonthByMonth(investment, years, 12, stepUps);
+            document.getElementById('summaryTotal').textContent = formatCurrency(result.totalInvested);
+            document.getElementById('summaryCorpus').textContent = formatCurrency(result.corpus);
+
+            const stepUpsDiv = document.getElementById('summaryStepUps');
+            const stepUpsList = document.getElementById('summaryStepUpsList');
+            if (stepUps.length > 0) {
+                stepUpsList.innerHTML = stepUps.map(s =>
+                    `<div class="d-flex justify-content-between mb-1"><span>After month ${s.afterMonth}:</span><strong>${formatCurrency(s.amount)}/mo</strong></div>`
+                ).join('');
+                stepUpsDiv.style.display = 'block';
+            } else {
+                stepUpsDiv.style.display = 'none';
+            }
+        }
+
+        // Live savings on Step 2
+        document.querySelector('[name="MonthlyIncome"]')?.addEventListener('input', updateSavings);
+        document.querySelector('[name="MonthlyExpenses"]')?.addEventListener('input', updateSavings);
+        function updateSavings() {
+            const income = parseFloat(document.querySelector('[name="MonthlyIncome"]').value) || 0;
+            const expenses = parseFloat(document.querySelector('[name="MonthlyExpenses"]').value) || 0;
+            if (income > 0) {
+                const savings = income - expenses;
+                document.getElementById('monthlySavingsDisplay').textContent = formatCurrency(savings);
+                document.getElementById('monthlySavingsDisplay').className = 'fw-bold fs-5 ' + (savings > 0 ? 'text-success' : 'text-danger');
+                document.getElementById('savingsPreview').style.display = 'block';
+            }
+        }
+
+        // Live quick calc on Step 3
+        document.querySelector('[name="RetirementAge"]')?.addEventListener('input', updateQuickCalc);
+        document.getElementById('monthlyInvestmentInput')?.addEventListener('input', updateQuickCalc);
+    </script>
+}
